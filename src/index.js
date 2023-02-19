@@ -1,11 +1,25 @@
 const { app, BrowserWindow, Menu, ipcMain, Notification } = require("electron");
 const path = require("path");
 const shell = require("electron").shell;
+let alertValue = "";
+
+let mainWindow;
+let subWindow;
 
 const createWindow = () => {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
+    webPreferences: {
+      nodeIntegration: true,
+      preload: path.join(__dirname, "preload.js"),
+    },
+  });
+  subWindow = new BrowserWindow({
+    width: 500,
+    height: 200,
+    frame: false,
+    alwaysOnTop: true,
     webPreferences: {
       nodeIntegration: true,
       preload: path.join(__dirname, "preload.js"),
@@ -38,8 +52,9 @@ const createWindow = () => {
   Menu.setApplicationMenu(menu);
 
   mainWindow.loadFile(path.join(__dirname, "index.html"));
+  subWindow.loadFile(path.join(__dirname, "add.html"));
 
-  mainWindow.webContents.openDevTools();
+  // mainWindow.webContents.openDevTools();
 };
 
 app.whenReady().then(() => {
@@ -60,3 +75,8 @@ app.on("window-all-closed", () => {
 ipcMain.on("show-notification", (event, title, options) => {
   new Notification({ title, ...options }).show();
 });
+
+ipcMain.on('set-value', (event, value) => {
+  alertValue = value;
+  mainWindow.webContents.send('get-value', alertValue);
+})

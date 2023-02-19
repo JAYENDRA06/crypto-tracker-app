@@ -8,9 +8,13 @@ const BTCvalue = async () => {
   .get("https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=USD")
   .then((data) => {
     console.log(data.USD);
-    price.innerHTML= data.USD;
-    // return data.USD;
-    if(parseFloat(price.innerText) > 24677 && notificationCount == 0){
+    let comparePriceValue = -1;
+    if(targetPrice.innerText != "Choose a target price"){
+      comparePriceValue = parseFloat(targetPrice.innerText.replace(/[$,]+/g,""));
+    }
+    const mainValue = price.innerText.replace(/[$,]+/g,"");
+    price.innerText= '$'+ data.USD.toLocaleString();
+    if(parseFloat(mainValue) > comparePriceValue && notificationCount == 0 && comparePriceValue != -1){
       console.log(price.innerText);
       window.electronAPI.showNotification("BTC crossed limit!", {
         body: "Hey! the BTC market value just exceeded your limit",
@@ -25,12 +29,30 @@ BTCvalue();
 
 setInterval(() => BTCvalue(), 10000);
 notifyBtn.addEventListener("click", () => {
-  console.log("nkadjskj");
+  const webPreferences = {
+    nodeIntegration: true,
+    preload: path.join(__dirname, "preload.js")
+  };
+
+  // console.log(JSON.stringify(webPreferences));
+
+  const preloadPath = path.join(__dirname, 'preload.js');
+  // console.log(preloadPath);
 
   const childWindow = window.open(
     "add.html",
     "modal",
-    "height=200,width=500,frame=false,modal=true,alwaysOnTop=true"
+    // `height=200,width=500,frame=false,modal=true,alwaysOnTop=true,popup=true,webPreferences={nodeIntegration=true,preload=${preloadPath}}`,
+    `height=200,width=500,frame=false,modal=true,alwaysOnTop=true,popup=true,webPreferences=${webPreferences}`,
   );
 });
 
+function callback(value) {
+  targetPrice.innerText = '$'+ parseFloat(value).toLocaleString();
+}
+
+window.electronAPI.getValue('get-value', callback);
+
+// ipcRenderer.on('get-value', (event, value) => {
+//   console.log(value);
+// })
